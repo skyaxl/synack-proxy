@@ -1,2 +1,2 @@
-# synack-proxy
+# Synack Proxy
 proxy app
