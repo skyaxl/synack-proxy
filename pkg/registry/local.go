@@ -17,6 +17,7 @@ type Registry interface {
 	Reg(ctx context.Context, dumpReq, dumpRes []byte) error
 }
 
+//RegistryProvider struct to provide
 type RegistryProvider struct {
 	cache  *cache.Cache
 	server string
@@ -30,7 +31,7 @@ func (reg *RegistryProvider) Get(username string) Registry {
 		}
 	}
 
-	scr := &SideCarRegistry{server: reg.server}
+	scr := &SideCarRegistry{server: reg.server, username: username}
 	reg.cache.Set(username, scr, time.Hour)
 	return scr
 }
@@ -45,12 +46,19 @@ var NewProvider = func(server string) *RegistryProvider {
 
 //SideCarRegistry registry
 type SideCarRegistry struct {
-	server string
-	client registryclient.ClientWithResponsesInterface
+	server      string
+	client      registryclient.ClientWithResponsesInterface
+	username    string
+	autenticate bool
 }
 
 //Authenticate authenticate
 func (r *SideCarRegistry) Authenticate(ctx context.Context, user string, password string) (ok bool, err error) {
+
+	if r.autenticate {
+		return true, nil
+	}
+
 	r.client, err = registryclient.NewClientWithResponses(r.server, registryclient.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
 		req.SetBasicAuth(user, password)
 		return nil
@@ -64,7 +72,7 @@ func (r *SideCarRegistry) Authenticate(ctx context.Context, user string, passwor
 		golog.Errorf("User %s was not authorized to access proxy", user)
 		return false, errors.Wrapf(err, "User %s was not authorized to access proxy", user)
 	}
-
+	r.autenticate = true
 	golog.Infof("User logger: %v", userRegistry.JSON200.Name)
 
 	return true, nil
@@ -72,7 +80,12 @@ func (r *SideCarRegistry) Authenticate(ctx context.Context, user string, passwor
 
 //Reg register
 func (r *SideCarRegistry) Reg(ctx context.Context, dumpReq []byte, dumpRes []byte) error {
-	golog.Infof("Dump %v", string(dumpReq))
-	golog.Infof("Dump res %v", string(dumpRes))
-	return nil
+	golog.Infof("Sending dump %v", string(dumpReq))
+	golog.Infof("Sending dump res %v", string(dumpRes))
+	_, err := r.client.RegWithResponse(ctx, registryclient.RegJSONRequestBody{
+		Username: r.username,
+		DumpReq:  dumpReq,
+		DumpRes:  dumpRes,
+	})
+	return err
 }

@@ -23,22 +23,22 @@ const (
 
 // FullUser defines model for FullUser.
 type FullUser struct {
-	Name     *string `json:"name,omitempty"`
-	Password *string `json:"password,omitempty"`
-	Username *string `json:"username,omitempty"`
+	Name     string `json:"name,omitempty"`
+	Password string `json:"password,omitempty"`
+	Username string `json:"username,omitempty"`
 }
 
 // Registry defines model for Registry.
 type Registry struct {
-	DumpReq  *string `json:"dump_req,omitempty"`
-	DumpRes  *string `json:"dump_res,omitempty"`
-	Username *string `json:"username,omitempty"`
+	DumpReq  []byte `json:"dump_req,omitempty"`
+	DumpRes  []byte `json:"dump_res,omitempty"`
+	Username string `json:"username,omitempty"`
 }
 
 // User defines model for User.
 type User struct {
-	Name     *string `json:"name,omitempty"`
-	Username *string `json:"username,omitempty"`
+	Name     string `json:"name,omitempty"`
+	Username string `json:"username,omitempty"`
 }
 
 // RegJSONBody defines parameters for Reg.
