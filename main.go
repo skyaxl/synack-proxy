@@ -17,10 +17,12 @@ import (
 func main() {
 	portStr := os.Getenv("APP_PORT")
 	port, _ := strconv.ParseInt(portStr, 10, 64)
+	registryURL := os.Getenv("REGISTRY_URL")
 	if port == 0 {
 		port = 8080
 	}
-	p := proxy.NewHandler(&registry.LocalRegistry{}, factory.NewDefault(), http.DefaultClient)
+	registryProvider := registry.NewProvider(registryURL)
+	p := proxy.NewHandler(registryProvider, factory.NewDefault(), http.DefaultClient)
 	errs := make(chan error, 2)
 	go func() {
 		golog.Infof("[Proxy Api] Has started with address localhost:%d\n", port)

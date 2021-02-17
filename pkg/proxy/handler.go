@@ -10,13 +10,13 @@ import (
 	"time"
 
 	"github.com/kataras/golog"
+	"github.com/skyaxl/synack-proxy/pkg/registry"
 	"github.com/skyaxl/synack-proxy/pkg/response/formatters"
 )
 
-//Registry registrador
-type Registry interface {
-	Authenticate(ctx context.Context, user, password string) (ok bool, err error)
-	Reg(ctx context.Context, dumpReq, dumpRes []byte) error
+//RegistryProvider
+type RegistryProvider interface {
+	Get(username string) registry.Registry
 }
 
 //ResponseFormatterFactory create a response format
@@ -30,13 +30,13 @@ type Requester interface {
 
 //Handler structure
 type Handler struct {
-	registry  Registry
+	registry  RegistryProvider
 	resFac    ResponseFormatterFactory
 	requester Requester
 }
 
 //NewHandler create new handler
-func NewHandler(registry Registry, resFac ResponseFormatterFactory, requester Requester) *Handler {
+func NewHandler(registry RegistryProvider, resFac ResponseFormatterFactory, requester Requester) *Handler {
 	return &Handler{registry, resFac, requester}
 }
 
@@ -68,7 +68,8 @@ func (p *Handler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	proxyAuth := req.Header.Get("Proxy-Authorization")
 	user, pass, _ := parseBasicAuth(proxyAuth)
 	resFmt := p.resFac.Create(rw, req)
-	if ok, err := p.registry.Authenticate(req.Context(), user, pass); !ok {
+	regis := p.registry.Get(user)
+	if ok, err := regis.Authenticate(req.Context(), user, pass); !ok {
 		resFmt.WriteError(http.StatusForbidden, err)
 		return
 	}
@@ -107,14 +108,14 @@ func (p *Handler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 	rw.WriteHeader(res.StatusCode)
 
-	go func(ctx context.Context, reg Registry, dumped, resDumped []byte) {
+	go func(ctx context.Context, reg registry.Registry, dumped, resDumped []byte) {
 
 		err := reg.Reg(ctx, dumped, resDumped)
 		if err != nil {
 			golog.Errorf("Error to save log: %v \n", err)
 		}
 
-	}(req.Context(), p.registry, dumped, resDumped)
+	}(req.Context(), regis, dumped, resDumped)
 	end := time.Now()
 	total := end.Sub(start)
 	onlyRequest := originalRequestEnd.Sub(originalRequestStart)
