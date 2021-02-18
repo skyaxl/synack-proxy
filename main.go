@@ -18,6 +18,7 @@ func main() {
 	portStr := os.Getenv("APP_PORT")
 	port, _ := strconv.ParseInt(portStr, 10, 64)
 	registryURL := os.Getenv("REGISTRY_URL")
+	golog.Infof("[Proxy Api] Registry url %s", registryURL)
 	if port == 0 {
 		port = 8080
 	}
@@ -26,6 +27,8 @@ func main() {
 	errs := make(chan error, 2)
 	go func() {
 		golog.Infof("[Proxy Api] Has started with address localhost:%d\n", port)
+		golog.Infof("[Proxy Api] Registry url %s", registryURL)
+
 		errs <- http.ListenAndServe(fmt.Sprintf(":%d", port), p)
 	}()
 	go func() {

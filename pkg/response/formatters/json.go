@@ -20,12 +20,20 @@ func NewJson(res http.ResponseWriter, req *http.Request) *Json {
 func (j Json) WriteError(status int, err error) {
 	bts, _ := json.Marshal(&struct{ message string }{err.Error()})
 	j.res.Write(bts)
+	if status == 0 {
+		status = 500
+	}
+
 	j.res.WriteHeader(status)
 }
 
 //Write test
 func (j Json) Write(status int, o interface{}) {
 	bts, _ := json.Marshal(o)
+	if status == 0 {
+		status = 200
+	}
+
 	j.res.Write(bts)
 	j.res.WriteHeader(status)
 }

@@ -60,16 +60,18 @@ func (r *SideCarRegistry) Authenticate(ctx context.Context, user string, passwor
 	}
 
 	r.client, err = registryclient.NewClientWithResponses(r.server, registryclient.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
+		golog.Infof("[Proxy API] Setting basic credentions user %s password %s", user, password)
 		req.SetBasicAuth(user, password)
 		return nil
 	}))
 
 	if err != nil {
+		golog.Errorf("Error to create cliente err: %v", err)
 		return false, err
 	}
 	var userRegistry *registryclient.GetuserResponse
 	if userRegistry, err = r.client.GetuserWithResponse(ctx, user); err != nil || userRegistry.JSON200 == nil {
-		golog.Errorf("User %s was not authorized to access proxy", user)
+		golog.Errorf("User %s was not authorized to access proxy err: %v", user, err)
 		return false, errors.Wrapf(err, "User %s was not authorized to access proxy", user)
 	}
 	r.autenticate = true
@@ -80,8 +82,8 @@ func (r *SideCarRegistry) Authenticate(ctx context.Context, user string, passwor
 
 //Reg register
 func (r *SideCarRegistry) Reg(ctx context.Context, dumpReq []byte, dumpRes []byte) error {
-	golog.Infof("Sending dump %v", string(dumpReq))
-	golog.Infof("Sending dump res %v", string(dumpRes))
+	//golog.Debugf("Sending dump %v", string(dumpReq))
+	//golog.Debugf("Sending dump res %v", string(dumpRes))
 	_, err := r.client.RegWithResponse(ctx, registryclient.RegJSONRequestBody{
 		Username: r.username,
 		DumpReq:  dumpReq,

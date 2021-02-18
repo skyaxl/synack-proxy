@@ -67,9 +67,11 @@ func (p *Handler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	golog.Infof("Start %v \n", start)
 	proxyAuth := req.Header.Get("Proxy-Authorization")
 	user, pass, _ := parseBasicAuth(proxyAuth)
+	golog.Infof("[Proxy API] Parsed basic credentials user %s password %s", user, pass)
 	resFmt := p.resFac.Create(rw, req)
 	regis := p.registry.Get(user)
 	if ok, err := regis.Authenticate(req.Context(), user, pass); !ok {
+		golog.Infof("[Proxy API] Autentication error %s password %s, err %v", user, pass, err)
 		resFmt.WriteError(http.StatusForbidden, err)
 		return
 	}
